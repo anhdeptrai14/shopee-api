@@ -1,50 +1,41 @@
 const express = require("express");
 const axios = require("axios");
-const crypto = require("crypto");
 const cors = require("cors");
 
 const app = express();
 app.use(cors());
 
-// lấy từ ENV (Render)
-const APP_ID = process.env.APP_ID;
-const SECRET = process.env.SECRET;
-
 app.get("/", (req, res) => {
-  res.send("Shopee API đang chạy 🚀");
+  res.send("API chạy OK 🚀");
 });
 
 app.get("/shopee", async (req, res) => {
   try {
     const url = req.query.url;
-    const timestamp = Math.floor(Date.now() / 1000);
 
-    const base = `${APP_ID}${timestamp}`;
-    const sign = crypto
-      .createHmac("sha256", SECRET)
-      .update(base)
-      .digest("hex");
+    // lấy ID từ link
+    const match = url.match(/i\.(\d+)\.(\d+)/);
+    if (!match) return res.json({ error: "Link sai" });
 
-    const response = await axios.get(
-      "https://open-api.affiliate.shopee.vn/graphql",
-      {
-        params: {
-          app_id: APP_ID,
-          timestamp: timestamp,
-          sign: sign,
-          url: url
-        }
-      }
-    );
+    const shopid = match[1];
+    const itemid = match[2];
 
-    const d = response.data;
+    const api = `https://shopee.vn/api/v4/item/get?itemid=${itemid}&shopid=${shopid}`;
+
+    const response = await axios.get(api);
+    const item = response.data.data;
+
+    const price = item.price / 100000;
+
+    // 👉 fake hoa hồng (2.5%)
+    const commission = Math.round(price * 0.025);
 
     res.json({
-      name: d.name || "",
-      price: d.price || 0,
-      image: d.image || "",
-      commission: d.commission || 0,
-      aff_link: d.aff_link || url
+      name: item.name,
+      price: price,
+      image: "https://cf.shopee.vn/file/" + item.image,
+      commission: commission,
+      link: url
     });
 
   } catch (e) {
@@ -52,6 +43,4 @@ app.get("/shopee", async (req, res) => {
   }
 });
 
-app.listen(process.env.PORT || 3000, () => {
-  console.log("Server running...");
-});
+app.listen(process.env.PORT || 3000);
