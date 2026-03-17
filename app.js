@@ -5,25 +5,45 @@ const cors = require("cors");
 const app = express();
 app.use(cors());
 
+// test
 app.get("/", (req, res) => {
-  res.send("API OK");
+  res.send("API OK 🚀");
 });
 
+// API lấy sản phẩm Shopee
 app.get("/shopee", async (req, res) => {
   try {
     const url = req.query.url;
 
-    // lấy ID từ link
+    if (!url) {
+      return res.json({ error: "Thiếu link" });
+    }
+
+    // lấy shopid + itemid
     const match = url.match(/i\.(\d+)\.(\d+)/);
-    if (!match) return res.json({ error: "Link sai" });
+    if (!match) {
+      return res.json({ error: "Link sai định dạng" });
+    }
 
     const shopid = match[1];
     const itemid = match[2];
 
     const api = `https://shopee.vn/api/v4/item/get?itemid=${itemid}&shopid=${shopid}`;
 
-    const response = await axios.get(api);
+    // 👉 FIX: thêm header để không bị Shopee chặn
+    const response = await axios.get(api, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        "Accept": "application/json",
+        "Referer": "https://shopee.vn/"
+      }
+    });
+
     const item = response.data.data;
+
+    if (!item) {
+      return res.json({ error: "Không lấy được sản phẩm" });
+    }
 
     const price = item.price / 100000;
 
@@ -36,7 +56,8 @@ app.get("/shopee", async (req, res) => {
     });
 
   } catch (e) {
-    res.json({ error: "Lỗi API" });
+    console.log(e.message);
+    res.json({ error: "Lỗi API Shopee" });
   }
 });
 
