@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 
 app.get("/", (req, res) => {
-  res.send("API chạy OK 🚀");
+  res.send("API OK");
 });
 
 app.get("/shopee", async (req, res) => {
@@ -27,14 +27,11 @@ app.get("/shopee", async (req, res) => {
 
     const price = item.price / 100000;
 
-    // 👉 fake hoa hồng (2.5%)
-    const commission = Math.round(price * 0.025);
-
     res.json({
       name: item.name,
       price: price,
       image: "https://cf.shopee.vn/file/" + item.image,
-      commission: commission,
+      commission: Math.round(price * 0.03), // 3%
       link: url
     });
 
